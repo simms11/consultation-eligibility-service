@@ -1,0 +1,61 @@
+{
+  "info": {
+    "_postman_id": "977eaaa7-d64c-4daa-9e52-25e0e7c0d968",
+    "name": "MedExpress_Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "11498695"
+  },
+  "item": [
+    {
+      "name": "http://localhost:8080/consultation/questions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/consultation/questions",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "consultation",
+            "questions"
+          ]
+        },
+        "description": "Get consultation questions"
+      },
+      "response": []
+    },
+    {
+      "name": "http://localhost:8080/consultation/submit",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"answers\": [\n        { \"questionId\": \"question_allergy_pear\", \"answer\": \"Yes\" }, \n        { \"questionId\": \"question_age_over_18\", \"answer\": \"Yes\" },\n        { \"questionId\": \"question_pregnancy\", \"answer\": \"No\" }\n    ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/consultation/submit",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "consultation",
+            "submit"
+          ]
+        },
+        "description": "Submit consultation"
+      },
+      "response": []
+    }
+  ]
+}

@@ -37,6 +37,18 @@ The application will start on `http://localhost:8080`.
 ```bash
 mvn test
 ```
+## API Testing
+
+A Postman collection has been included in this repository.
+
+[ Download Postman Collection](./postman/MedExpress_Collection.json)
+
+To use:
+1. Download the file above.
+2. Open Postman.
+3. Click **Import** > **Upload Files**.
+4. Select `MedExpress_Collection.json`.
+
 
 ##  API Usage
 
