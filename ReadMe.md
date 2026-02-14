@@ -1,23 +1,28 @@
 # MedExpress Genovia - Consultation API
 
-This is a Spring Boot MVP Patient Consultation Eligibility Service. The application confirms treatment for the Genovian Pear Allergy.
+This is a Spring Boot Patient Consultation Eligibility Service. The application validates patient eligibility for medical treatments through a configurable question-and-answer system.
 
-##  Project Overview
+## Project Overview
 
 This service provides a RESTful API to:
 
-- Retrieve the specific medical questionnaire for the Genovian Pear condition.
-- Validate patient answers against clinical eligibility rules.
-- Determine if a patient is eligible for the prescribed treatment.
+- Retrieve product-specific medical questionnaires
+- Validate patient answers against clinical eligibility rules
+- Determine patient eligibility with configurable business rules
+- Support multiple products through database-driven configuration
 
-## ️ Tech Stack
+## Tech Stack
 
-- **Java 17+**
-- **Spring Boot**
+- **Java 21**
+- **Spring Boot 3.2.2**
+- **Spring Data JPA**
+- **H2 Database**
 - **JUnit 5 & Mockito**
+- **Jakarta Validation**
+- **Lombok**
 - **Maven**
 
-## ️ Setup & Running
+## Setup & Running
 
 ### Prerequisites
 
@@ -37,27 +42,13 @@ The application will start on `http://localhost:8080`.
 ```bash
 mvn test
 ```
-## API Testing
 
-A Postman collection has been included in this repository.
+## API Usage
 
-[ Download Postman Collection](./postman/MedExpress_Collection.json)
-
-To use:
-1. Download the file above.
-2. Open Postman.
-3. Click **Import** > **Upload Files**.
-4. Select `MedExpress_Collection.json`.
-
-
-##  API Usage
-
-### 1. Get Questions
-
-Retrieves the list of questions for the default product (Genovian Pear).
+### 1. Get Questions by Product
 
 ```bash
-curl -X GET http://localhost:8080/consultation/questions
+curl -X GET http://localhost:8080/consultation/products/genovian_pear/questions
 ```
 
 **Response Example:**
@@ -65,24 +56,27 @@ curl -X GET http://localhost:8080/consultation/questions
 [
   {
     "id": "question_allergy_pear",
+    "productId": "genovian_pear",
     "text": "Have you been diagnosed with an allergy to Genovian Pears?",
-    "options": ["Yes", "No"],
-    "expectedAnswer": "Yes",
-    "rejectedMessage": "We cannot prescribe this medication because of your allergy."
+    "options": ["Yes", "No"]
   },
   {
     "id": "question_age_over_18",
+    "productId": "genovian_pear",
     "text": "Are you over 18 years of age?",
-    "options": ["Yes", "No"],
-    "expectedAnswer": "Yes",
-    "rejectedMessage": "You must be over 18 to use this service."
+    "options": ["Yes", "No"]
   },
   {
     "id": "question_pregnancy",
+    "productId": "genovian_pear",
     "text": "Are you currently pregnant or breastfeeding?",
-    "options": ["Yes", "No"],
-    "expectedAnswer": "No",
-    "rejectedMessage": "We cannot prescribe this medication if you are pregnant or breastfeeding."
+    "options": ["Yes", "No"]
+  },
+  {
+    "id": "question_blood_pressure",
+    "productId": "genovian_pear",
+    "text": "How would you describe your blood pressure?",
+    "options": ["Low", "Normal", "High"]
   }
 ]
 ```
@@ -91,18 +85,21 @@ curl -X GET http://localhost:8080/consultation/questions
 
 #### Scenario A: Eligible Patient
 
-- Has the allergy (Prerequisite for treatment)
+- Not allergic to Genovian Pears
 - Over 18
 - Not pregnant
+- Normal blood pressure
 
 ```bash
 curl -X POST http://localhost:8080/consultation/submit \
 -H "Content-Type: application/json" \
 -d '{
+    "productId": "genovian_pear",
     "answers": [
-        { "questionId": "question_allergy_pear", "answer": "Yes" }, 
+        { "questionId": "question_allergy_pear", "answer": "No" },
         { "questionId": "question_age_over_18", "answer": "Yes" },
-        { "questionId": "question_pregnancy", "answer": "No" }
+        { "questionId": "question_pregnancy", "answer": "No" },
+        { "questionId": "question_blood_pressure", "answer": "Normal" }
     ]
 }'
 ```
@@ -115,18 +112,20 @@ curl -X POST http://localhost:8080/consultation/submit \
 }
 ```
 
-#### Scenario B: Ineligible Patient
+#### Scenario B: Ineligible Patient (Has Allergy)
 
-- Does not have the allergy (Treatment not required)
+Patient has the allergy that this medication treats.
 
 ```bash
 curl -X POST http://localhost:8080/consultation/submit \
 -H "Content-Type: application/json" \
 -d '{
+    "productId": "genovian_pear",
     "answers": [
-        { "questionId": "question_allergy_pear", "answer": "No" },
+        { "questionId": "question_allergy_pear", "answer": "Yes" },
         { "questionId": "question_age_over_18", "answer": "Yes" },
-        { "questionId": "question_pregnancy", "answer": "No" }
+        { "questionId": "question_pregnancy", "answer": "No" },
+        { "questionId": "question_blood_pressure", "answer": "Normal" }
     ]
 }'
 ```
@@ -135,79 +134,105 @@ curl -X POST http://localhost:8080/consultation/submit \
 ```json
 {
   "eligible": false,
-  "message": "We cannot prescribe this medication because of your allergy."
+  "message": "This medication is only prescribed for patients with Genovian Pear allergy."
 }
 ```
 
-#### Error Handling
+#### Error Handling Examples
 
-Invalid submissions will return a 400 Bad Request with details:
-
+**Missing Required Field:**
 ```json
 {
-  "timestamp": "2026-02-08T10:30:00",
+  "timestamp": "2026-02-14T10:30:00",
   "status": 400,
-  "error": "Bad Request",
-  "message": "Expected: 3 answers"
+  "error": "Validation Failed",
+  "details": {
+    "productId": "Product ID is required"
+  }
 }
 ```
 
-##  Validation Rules
+**Invalid Product ID:**
+```json
+{
+  "timestamp": "2026-02-14T10:30:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Unknown product: invalid_product"
+}
+```
 
-The service enforces the following validation rules on submission:
+**Wrong Number of Answers:**
+```json
+{
+  "timestamp": "2026-02-14T10:30:00",
+  "status": 400,
+  "error": "Validation Error",
+  "message": "Expected: 4 answers"
+}
+```
 
-1. **Answer Count:** 
-2. **No Duplicates:**
-3. **Valid Question IDs:**
-4. **Valid Answer Options:** ("Yes" or "No")
+**Invalid Answer Option:**
+```json
+{
+  "timestamp": "2026-02-14T10:30:00",
+  "status": 400,
+  "error": "Validation Error",
+  "message": "Invalid answer 'Maybe' for question question_allergy_pear. Valid options: [Yes, No]"
+}
+```
+
+## Validation Rules
+
+The service enforces comprehensive validation at multiple layers:
+
+### Request-Level Validation (Jakarta Validation)
+
+1. **Product ID**: Required, cannot be null
+2. **Answers List**: Required, cannot be null or empty
+3. **Question ID**: Required for each answer, cannot be blank
+4. **Answer Value**: Required for each answer, cannot be blank
+
+### Business-Level Validation (Service Layer)
+
+5. **Product Existence**: Product ID must exist in database
+6. **Answer Count**: Must match the number of questions for the product
+7. **No Duplicates**: Each question can only be answered once
+8. **Valid Question IDs**: All question IDs must belong to the specified product
+9. **Valid Answer Options**: Answers must match one of the predefined options for each question
 
 Any validation failure returns a `400 Bad Request` with a descriptive error message.
 
-##  Design Decisions & Trade-offs
+## Design Decisions & Trade-offs
 
-### 1. Domain Logic
+### Multi-Product Architecture
 
-I interpreted the requirement *"The condition we have chosen to target is an allergy to... the Genovian Pear"* as a treatment scenario.
+Questions are mapped to products via `productId` with JPA relationships. Database-driven configuration enables new products to be added by updating `questions.json` without code changes.
 
-- **Decision:** A patient must have the allergy (question_allergy_pear = Yes) to be eligible.
-- **Reasoning:** The allergy is the condition being treated. If a patient is not allergic, they do not need the medicine.
+### Configurable Business Rules Engine
 
-### 2. Architecture: Service-Layer Validation
+The `specificOutcomes` mapping on Question entity eliminates hardcoded business rules. Special cases are configured in the database rather than code.
 
-- **Decision:** Validation is performed in the `ConsultationService`.
-- **Reasoning:** This encapsulates business rules within the domain layer. Data integrity rules are always enforced, allowing the Controller to strictly focus on HTTP concerns.
+### Type-Safe Product Identifiers
 
-### 3. Records & Immutability
+`ProductId` enum with Jackson converter provides compile-time validation. Invalid product IDs are caught at JSON deserialization.
 
-- **Decision:** Used Java `record` types (`SubmitConsultationRequest`, `EligibilityResponse`, `Question`, `ConsultationAnswer`) instead of Lombok or POJOs.
-- **Reasoning:** This provides immutability whilst reduces boilerplate.
+### Security Through DTOs
 
-### 4. Storage
+`QuestionDTO` exposes only public fields in API responses, preventing clients from seeing expected answers or business rules.
 
-- **Decision:** Used a `HashMap` in the Repository layer as no permanent storage is required.
+### Structured Logging
 
-##  Areas for Improvement
+SLF4J logging throughout the service layer provides production observability.
 
-Given more time, I would implement the following extensions:
+### Areas for Future Enhancement
 
-### 1. Code Quality & Robustness
+1. Integration Testing
 
-- **UUIDs:** Transition from `String` IDs to `UUID` for the `consultationId` to ensure global uniqueness.
-- **Strong Typing:** Refactor the `SubmitConsultationRequest` to use Enums (e.g., `AnswerType.YES`) instead of Strings, preventing casing/whitespace bugs.
+2. Production Database
 
-### 2. Product Catalog
+3. Audit Trail
 
-- **Improvement:** Refactor the Repository to map questions to a Product ID.
-- **Plan:** Update the API to accept `GET /questions?productId=acne`. This allows new products to be added.
+4. API Documentation
 
-### 3. Data Storage
-
-- **Improvement:** Implement a hybrid database strategy.
-- **Plan:**
-    - **NoSQL (MongoDB):** For Consultation Answers (flexible schema, varies by product).
-    - **SQL (PostgreSQL):** For User & Payment data (ACID compliance).
-
-### 5. Audit Logging & Pagination
-
-- **Context:** Given the "Genovian Pear" is a critical export, the system requires high reliability and auditability.
-- **Plan:** Implement Cursor-Based Pagination for the Doctor's Dashboard and Audit Logging to defend decisions against regulatory audits.
+ 5. Spring Boot Actuator for observability & monitoring
