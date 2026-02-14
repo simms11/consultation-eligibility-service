@@ -1,10 +1,9 @@
 package com.medexpress.consultation.controller;
 
-import com.medexpress.consultation.model.SubmitConsultationRequest;
-import com.medexpress.consultation.model.EligibilityResponse;
-import com.medexpress.consultation.model.Question;
+import com.medexpress.consultation.model.*;
 import com.medexpress.consultation.service.ConsultationService;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,14 +19,19 @@ public class ConsultationController {
         this.consultationService = consultationService;
     }
 
-    @GetMapping("/questions")
-    public ResponseEntity<List<Question>> getQuestions(){
+    @GetMapping("/products/{productId}/questions")
+    public ResponseEntity<List<QuestionDTO>> getQuestionsByProduct(@PathVariable ProductId productId) {
 
-        return ResponseEntity.ok(consultationService.getAllQuestions());
+        List<QuestionDTO> questions = consultationService.getQuestionsByProduct(productId.getValue());
+
+        if (questions.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(questions);
     }
 
     @PostMapping("/submit")
-    public ResponseEntity<EligibilityResponse> submitConsultation(@RequestBody SubmitConsultationRequest submission){
+    public ResponseEntity<EligibilityResponse> submitConsultation(@Valid @RequestBody SubmitConsultationRequest submission) {
         EligibilityResponse decision = consultationService.processSubmission(submission);
 
         return ResponseEntity.ok(decision);

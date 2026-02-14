@@ -1,0 +1,40 @@
+[
+  {
+    "id": "question_allergy_pear",
+    "productId": "genovian_pear",
+    "text": "Have you been diagnosed with an allergy to Genovian Pears?",
+    "options": ["Yes", "No"],
+    "expectedAnswer": "No",
+    "rejectedMessage": "This medication is only prescribed for patients with Genovian Pear allergy.",
+    "specificOutcomes": {}
+  },
+  {
+    "id": "question_age_over_18",
+    "productId": "genovian_pear",
+    "text": "Are you over 18 years of age?",
+    "options": ["Yes", "No"],
+    "expectedAnswer": "Yes",
+    "rejectedMessage": "You must be over 18 to use this service.",
+    "specificOutcomes": {}
+  },
+  {
+    "id": "question_pregnancy",
+    "productId": "genovian_pear",
+    "text": "Are you currently pregnant or breastfeeding?",
+    "options": ["Yes", "No"],
+    "expectedAnswer": "No",
+    "rejectedMessage": "We cannot prescribe this medication if you are pregnant or breastfeeding.",
+    "specificOutcomes": {}
+  },
+  {
+    "id": "question_blood_pressure",
+    "productId": "genovian_pear",
+    "text": "How would you describe your blood pressure?",
+    "options": ["Low", "Normal", "High"],
+    "expectedAnswer": "Normal",
+    "rejectedMessage": "Your blood pressure is too high for this medication.",
+    "specificOutcomes": {
+      "Low": "Please contact Customer Support to schedule an appointment."
+    }
+  }
+]
